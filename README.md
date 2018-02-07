@@ -1,5 +1,19 @@
 # Private Key Generator
 
+## Usage
+
+`node index.js input.txt output-folder`
+
+## Input file format
+
+`cat input.txt`
+```
+username1
+username2
+username3
+...
+```
+
 ## Algorithm
 
 ```
