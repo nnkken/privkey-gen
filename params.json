@@ -1,0 +1,9 @@
+{
+    "kdf": "scrypt",
+    "N": 1048576,
+    "r": 8,
+    "p": 1,
+    "dkLen": 64,
+    "salt": "privkey-gen",
+    "actualPrivKeyGen": "hmac-sha256"
+}

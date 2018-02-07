@@ -1,48 +1,48 @@
-/* global Promise */
-
-const read = require("read");
 const scrypt = require("scrypt");
-const account = require("ethjs-account");
 const fs = require("fs");
-const crypto = require("crypto");
+const params = require("./params.json");
+const { getPassword, usernameToAccount } = require("./utils.js");
 
-function readAsync(options) {
-    return new Promise((resolve, reject) => {
-        read(options, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        });
-    });
+function readUsernames(path) {
+    return fs.readFileSync(path, "utf-8")
+        .split("\n")
+        .filter(s => s.length > 0);
 }
 
-async function getPassword() {
-    const p1 = await readAsync({ prompt: "Please enter your password: ", silent: true });
-    const p2 = await readAsync({ prompt: "Enter your password again: ", silent: true });
-    if (p1 !== p2) {
-        throw "Password does not match";
-    }
-    return p1;
+function writeOutputFile(unameAddrList, path) {
+    const timestamp = Date.now();
+    unameAddrList.forEach((unameAddr) => {
+        const displayName = unameAddr[0];
+        const wallet = unameAddr[1];
+        const json = JSON.stringify({ timestamp, displayName, wallet });
+        const dirPath = `${path}/${displayName}`;
+        const jsonPath = `${dirPath}/${displayName}.json`;
+        console.log(`Writing ${jsonPath}`);
+        fs.mkdirSync(dirPath);
+        fs.writeFileSync(jsonPath, json);
+    });
 }
 
 async function main() {
     try {
-        const path = process.argv[2];
-        if (!path) {
-            throw "No input file given";
+        const inputPath = process.argv[2];
+        const outputPath = process.argv[3];
+        if (!inputPath || !outputPath) {
+            console.error(`Usage: ${process.argv[0]} ${process.argv[1]} [username list file] [output folder]`);
+            process.exit(1);
+        }
+        if (!fs.existsSync(outputPath)) {
+            fs.mkdirSync(outputPath);
         }
         const password = await getPassword();
-        const seed = scrypt.hashSync(password, { N: 262144, r: 8, p: 1 }, 64, "");
-        const usernames = fs.readFileSync(path, "utf-8").split("\n").filter(s => s);
-        usernames.forEach((uname) => {
-            const hmac = crypto.createHmac("sha256", seed);
-            hmac.update(uname);
-            const privKey = hmac.digest("hex");
-            const acc = account.privateToAccount(privKey);
-            console.log(`${uname}\t${acc.address}`);
+        const { N, r, p, dkLen, salt } = params;
+        const seed = scrypt.hashSync(password, { N, r, p }, dkLen, salt);
+        const usernames = readUsernames(inputPath);
+        const unameAddrList = usernames.map((uname) => {
+            const acc = usernameToAccount(uname, seed);
+            return [uname, acc.address];
         });
+        writeOutputFile(unameAddrList, outputPath);
     } catch (e) {
         console.error(e);
         process.exit(1);
@@ -50,3 +50,4 @@ async function main() {
 }
 
 main();
+

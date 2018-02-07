@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "ethjs-account": "^0.1.4",
-    "js-scrypt": "^0.2.0",
     "read": "^1.0.7",
     "scrypt": "^6.0.3"
   }
